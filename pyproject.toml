@@ -16,6 +16,10 @@ dependencies = [
   "h5py",
   "matplotlib",
   "earthaccess",
+  "shapely>=2",
+  "scipy",
+  "scikit-learn",
+  "rasterio",
 ]
 
 [project.optional-dependencies]

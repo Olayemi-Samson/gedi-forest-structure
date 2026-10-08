@@ -1,91 +1,124 @@
 # gedi-forest-structure
 
-Tropical forest canopy structure and change from NASA **GEDI** spaceborne lidar
-(Level 2A, *Elevation and Height Metrics*).
+Tropical forest **structure, disturbance and regrowth** from NASA **GEDI**
+spaceborne lidar, with built-in **cross-country comparison** (Nigeria vs. other
+tropical regions).
 
-The tool downloads GEDI footprints for any bounding box, filters them with
-documented quality rules, and produces gridded canopy-height maps, per-year
-statistics, mean vertical (relative-height) profiles, and a per-cell
-**change map** between two periods. It is a small, transparent starting point
-for linking lidar-derived forest structure to disturbance and recovery.
+GEDI measures the vertical structure of forests, which drives carbon storage and
+is a key observation for process-based ecosystem models. This toolkit turns raw
+GEDI Level 2A footprints into answers to five concrete questions:
 
-## Status
+| Question | Command | Output |
+|---|---|---|
+| What does canopy height look like, and how does it change in time? | `report` | height maps, yearly stats, vertical profiles, change map |
+| How does Nigeria compare with other tropical regions? | `compare` | per-state and per-country medians with honest confidence intervals |
+| How much shorter is forest near clearings (edge effects)? | `disturbance` | canopy height vs distance to edge |
+| How fast does forest recover after clearing? | `disturbance` | canopy height vs years since loss |
+| Can simple predictors explain canopy height, tested without spatial leakage? | `model` | spatially cross-validated gradient-boosting baseline |
+
+It works anywhere GEDI flies (roughly 51.6 degrees N to S). Nigeria and Brazil
+state boundaries are bundled; any other country is one command away.
+
+## Status (read this first)
 
 | Item | State |
 |---|---|
-| Code, CLI, unit tests | Done (`pytest`: all passing) |
-| Unit tests use real GEDI data | **No.** Tests use small synthetic HDF5 files with known properties (see `tests/conftest.py`). They check the code, not the science. |
-| Run on real GEDI data | See [Reproduce](#reproduce). Results will be added under `results/` with the exact command and date. |
+| Code and command-line tool | Complete |
+| Automated tests | 45 passing (unit, integration and an end-to-end chain) |
+| Boundary data | **Real**: geoBoundaries Nigeria and Brazil, bundled with licences |
+| Test shots and rasters | Fabricated, for tests only (see `tests/conftest.py`) |
+| Run on real GEDI / Hansen data | Pending; results will be added to `results/` with the exact command and date |
 
-No figure or number in this repository comes from synthetic data.
+No number or figure in this repository comes from fabricated data.
 
-## What it does
+## Quick start
 
-1. **download**: searches NASA's catalogue (via the `earthaccess` library) for
-   `GEDI02_A` granules over a bounding box and date range and downloads them.
-2. **process**: reads the per-beam HDF5 groups, keeps shots passing quality
-   filters, converts `delta_time` to calendar time, writes one table.
-3. **report**: grids shots (default 0.01 degrees, about 1.1 km), summarises by
-   year, computes mean relative-height profiles, and maps the change in median
-   RH98 between an early and a late period.
-
-### Quality filters (all configurable)
-
-| Rule | Default |
-|---|---|
-| `quality_flag` | must equal 1 |
-| `degrade_flag` | must equal 0 |
-| `sensitivity` | at least 0.95 |
-| RH98 range | 0 to 120 m |
-
-Every run prints how many shots each rule removed. These defaults are common
-analysis choices, not guarantees; report them with any result.
-
-## Reproduce
-
-Requires Python 3.10+ and a free [NASA Earthdata](https://urs.earthdata.nasa.gov)
-account.
+Requires Python 3.10+ and a free [NASA Earthdata](https://urs.earthdata.nasa.gov) account.
 
 ```bash
 pip install -e ".[dev]"
-pytest                                   # sanity check the code
+pytest                                   # confirm everything works on your machine
 
-# 1. Download (example box in Rondonia, Brazil; use any tropical region)
-python -m gedi_forest download --bbox -63.5 -10.5 -62.0 -9.0 \
-    --start 2019-04-18 --end 2023-03-01 --max-granules 12
-
-# 2. Filter and tabulate
-python -m gedi_forest process --raw data/raw --bbox -63.5 -10.5 -62.0 -9.0
-
-# 3. Summaries, maps, change detection
-python -m gedi_forest report
+# Nigeria (Cross River) vs Brazil (Rondonia), end to end:
+MAX=8 bash scripts/run_nigeria_vs_brazil.sh
 ```
 
-Outputs land in `results/`: `summary.json`, `grid_stats.csv`,
-`yearly_summary.csv`, `mean_profile_by_year.csv`, `change_map.csv` and the PNG
-figures. GEDI granules are large (often hundreds of MB each), so start with a
-small `--max-granules`.
+Or step by step:
 
-## Methods notes and limitations
+```bash
+python -m gedi_forest bbox --iso NGA --region "Cross River"     # box from the real polygon
+python -m gedi_forest download --bbox <W S E N> --max-granules 8 --out data/raw/nga
+python -m gedi_forest process  --raw data/raw
+python -m gedi_forest report
+python -m gedi_forest compare  --iso NGA BRA                    # add COD, IDN ... after regions-fetch
+python -m gedi_forest regions-fetch --iso COD IDN               # more countries, on demand
+```
 
-- **Footprint sampling.** GEDI samples about 25 m footprints along orbit
-  tracks; it does not map wall to wall. Shot locations differ between years, so
-  per-cell change is an exploratory indicator and depends on `--min-shots`.
-- **RH98** is the height (m) below which 98 % of waveform energy is returned,
-  used here as a canopy-height metric.
-- **Time coverage.** GEDI data begin in April 2019; results span only the
-  years actually downloaded.
-- **Not included:** forest-cover masks, edge-distance analysis, biomass
-  (L4A) and model-data integration.
+GEDI granules are large (often hundreds of MB). Start with a small `--max-granules`.
 
-## Roadmap
+## Edge effects and regrowth
 
-- Join Hansen / MapBiomas forest-loss layers to separate edge, degraded and
-  intact forest.
-- Add GEDI L4A aboveground biomass density.
-- Compare GEDI structure with outputs from a process-based ecosystem model.
+These steps need forest-loss history from the Hansen et al. Global Forest Change
+dataset (30 m, CC BY 4.0). Download the `treecover2000` and `lossyear` tiles
+covering your area from the dataset's download page (tile names encode the tile
+corner), then:
 
-## Data and citation
+```bash
+python -m gedi_forest disturbance --shots data/processed/shots.csv.gz \
+    --lossyear  Hansen_..._lossyear_*.tif \
+    --treecover Hansen_..._treecover2000_*.tif
+python -m gedi_forest model
+```
 
-GEDI L2A data are distributed by NASA's LP DAAC. Cite the dataset version you
-download, as listed on its LP DAAC landing page. This project is MIT licensed.
+Key design choices:
+
+- **Time-aware matching.** A shot from 2020 only sees loss up to 2020. A pixel
+  cleared in 2022 is still intact forest for that shot, so each shot is
+  classified at its own acquisition date.
+- **Cluster-aware uncertainty.** GEDI shots along a track are strongly
+  correlated, so confidence intervals come from resampling whole ground-track
+  segments, not individual shots (verified in `tests/test_compare.py`).
+- **Spatial cross-validation.** `model` reports spatial-block and random CV side
+  by side; a large gap means random CV overstates skill.
+
+## Layout
+
+```
+gedi_forest/
+  io.py           read GEDI L2A HDF5 (schema-checked against NASA's tutorial layout)
+  filters.py      quality filters, time conversion
+  analysis.py     gridding, yearly stats, vertical profiles, change maps
+  regions.py      real admin boundaries, point-in-polygon, bounding boxes
+  compare.py      cluster-bootstrap medians and differences
+  disturbance.py  regrowth age and edge distance from forest-loss tiles
+  model.py        spatially cross-validated RH98 baseline
+  cli.py          command line
+data/boundaries/  bundled Nigeria and Brazil boundaries + licence metadata
+docs/             METHODS.md, DATA_SOURCES.md
+tests/            45 tests
+```
+
+## Limitations
+
+- GEDI samples footprints along orbit tracks; it is not wall-to-wall, and
+  coverage over Nigeria is thinner than over some regions. Per-cell change is
+  exploratory.
+- Hansen loss captures stand-replacement clearing, not selective logging or
+  subtle degradation, so "intact" means no detected clearing, not undisturbed.
+- Edge distances are approximate (pixel size scaled to metres at the window
+  centre) and are capped at `--max-edge-m` (default 1000 m).
+- Quality-filter thresholds are analysis choices; report them with any result.
+- Associations in `model` are descriptive, not causal.
+
+See [docs/METHODS.md](docs/METHODS.md) and [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
+
+## Background
+
+A 2023 study of Nigerian oil-palm plantations found that global canopy-height
+products had mean absolute errors of 4.2 to 6.2 m, versus 2.5 m for locally
+trained models, and noted relatively sparse GEDI coverage in the region
+(Tsao et al., *Remote Sensing* 15(21):5162). This toolkit is a general,
+region-agnostic starting point for the kind of local evaluation that finding
+motivates.
+
+MIT licensed. Boundary data carry their own licences (see DATA_SOURCES.md).

@@ -67,3 +67,42 @@ def plot_change(cm: pd.DataFrame, path: Path, title: str) -> Path:
     ax.set_title(title)
     ax.set_aspect("equal")
     return _save(fig, path)
+
+
+def plot_regions(table: pd.DataFrame, path: Path, region_col: str = "region", top: int = 25) -> Path:
+    t = table.head(top).iloc[::-1]
+    fig, ax = plt.subplots(figsize=(7, max(3, 0.3 * len(t) + 1.5)))
+    ax.barh(t[region_col], t["median_rh98"], color="#4c9a6a")
+    lo = (t["median_rh98"] - t["ci_low"]).fillna(0)
+    hi = (t["ci_high"] - t["median_rh98"]).fillna(0)
+    ax.errorbar(t["median_rh98"], range(len(t)), xerr=[lo, hi], fmt="none", ecolor="black", capsize=2)
+    ax.set_xlabel("Median RH98 (m); bars = 95% cluster-bootstrap CI")
+    ax.set_title("Canopy height by region")
+    return _save(fig, path)
+
+
+def _profile_plot(t: pd.DataFrame, path: Path, xlabel: str, title: str) -> Path:
+    fig, ax = plt.subplots(figsize=(7, 4))
+    x = range(len(t))
+    ax.errorbar(x, t["median_rh98"],
+                yerr=[(t["median_rh98"] - t["ci_low"]).fillna(0), (t["ci_high"] - t["median_rh98"]).fillna(0)],
+                fmt="o-", capsize=3)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(t["bin"], rotation=30, ha="right")
+    for i, n in enumerate(t["n_shots"]):
+        ax.annotate(f"n={int(n):,}", (i, t["median_rh98"].iloc[i]), textcoords="offset points",
+                    xytext=(0, 8), ha="center", fontsize=7)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Median RH98 (m)")
+    ax.set_title(title)
+    return _save(fig, path)
+
+
+def plot_edge_profile(t: pd.DataFrame, path: Path) -> Path:
+    return _profile_plot(t, path, "Distance to nearest cleared or non-forest pixel",
+                         "Canopy height vs distance to forest edge (intact forest)")
+
+
+def plot_recovery(t: pd.DataFrame, path: Path) -> Path:
+    return _profile_plot(t, path, "Years since forest loss",
+                         "Canopy height recovery after loss")

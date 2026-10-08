@@ -66,6 +66,11 @@ def read_beam(group: h5py.Group, beam: str, source: str) -> pd.DataFrame:
         "degrade_flag": group["degrade_flag"][:],
         "sensitivity": group["sensitivity"][:],
     }
+    # Ground elevation (metres) is optional; it is a useful model predictor.
+    if "elev_lowestmode" in group:
+        data["elev"] = group["elev_lowestmode"][:].astype("float32")
+    else:
+        data["elev"] = np.full(rh.shape[0], np.nan, dtype="float32")
     for p in RH_KEEP:
         data[f"rh{p}"] = (rh[:, p] * scale).astype("float32")
     df = pd.DataFrame(data)
@@ -88,7 +93,7 @@ def read_granule(path: str | Path, beams: Iterable[str] | None = None) -> pd.Dat
 
 
 def read_directory(directory: str | Path, pattern: str = "*.h5", **kw) -> pd.DataFrame:
-    files = sorted(Path(directory).glob(pattern))
+    files = sorted(Path(directory).rglob(pattern))  # recursive: data/raw/nga, data/raw/bra, ...
     if not files:
         raise FileNotFoundError(f"No files matching {pattern} in {directory}")
     return pd.concat([read_granule(p, **kw) for p in files], ignore_index=True)
