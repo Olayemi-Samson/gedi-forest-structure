@@ -213,6 +213,43 @@ def cmd_model(a: argparse.Namespace) -> None:
     print("Compare 'spatial' and 'random': a large gap means random CV overstates skill.")
 
 
+def sanity_report(df: pd.DataFrame) -> tuple[dict, list[str]]:
+    """Summarise a processed shot table and flag values that look wrong for tropical forest."""
+    rh = df["rh98"].dropna()
+    info = {
+        "shots": int(len(df)),
+        "granules": int(df["granule"].nunique()) if "granule" in df else None,
+        "years": sorted(int(y) for y in df["year"].dropna().unique()) if "year" in df else [],
+        "lon_range": [round(float(df["lon"].min()), 3), round(float(df["lon"].max()), 3)],
+        "lat_range": [round(float(df["lat"].min()), 3), round(float(df["lat"].max()), 3)],
+        "rh98_percentiles_m": {str(q): round(float(rh.quantile(q / 100)), 1) for q in (5, 25, 50, 75, 95)},
+    }
+    warns = []
+    if len(df) < 1000:
+        warns.append("Fewer than 1,000 shots: too few for reliable medians. Download more granules.")
+    if len(info["years"]) < 2:
+        warns.append("Only one acquisition year: change analysis needs at least two.")
+    if len(rh) and float(rh.max()) > 120:
+        warns.append("RH98 above 120 m: units or filtering look wrong.")
+    if len(rh) and float(rh.median()) < 3:
+        warns.append("Median RH98 below 3 m: this area may be mostly non-forest, or the box is wrong.")
+    if len(rh) and float(rh.quantile(0.95)) < 10:
+        warns.append("Almost no tall canopy (95th percentile under 10 m): check the area is forested.")
+    return info, warns
+
+
+def cmd_check(a: argparse.Namespace) -> None:
+    df = pd.read_csv(a.shots)
+    info, warns = sanity_report(df)
+    print(json.dumps(info, indent=2))
+    if warns:
+        print("\nWARNINGS:")
+        for w in warns:
+            print(" -", w)
+    else:
+        print("\nNo obvious problems. Still look at the figures before trusting any number.")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="gedi-forest", description=__doc__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -288,6 +325,9 @@ def build_parser() -> argparse.ArgumentParser:
     m.add_argument("--block-deg", type=float, default=0.25)
     m.add_argument("--out", default="results/model")
     m.set_defaults(func=cmd_model)
+    k = sub.add_parser("check", help="Sanity-check a processed shot table (run this on real data)")
+    k.add_argument("--shots", default="data/processed/shots.csv.gz")
+    k.set_defaults(func=cmd_check)
     return p
 
 

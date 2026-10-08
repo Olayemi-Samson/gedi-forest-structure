@@ -24,7 +24,7 @@ state boundaries are bundled; any other country is one command away.
 | Item | State |
 |---|---|
 | Code and command-line tool | Complete |
-| Automated tests | 47 passing (unit, integration and an end-to-end chain) |
+| Automated tests | 48 passing (unit, integration and an end-to-end chain) |
 | Boundary data | **Real**: geoBoundaries Nigeria and Brazil, bundled with licences |
 | Test shots and rasters | Fabricated, for tests only (see `tests/conftest.py`) |
 | Run on real GEDI / Hansen data | Pending; results will be added to `results/` with the exact command and date |
@@ -33,9 +33,14 @@ No number or figure in this repository comes from fabricated data.
 
 ## Quick start
 
-Requires Python 3.10+ and a free [NASA Earthdata](https://urs.earthdata.nasa.gov) account.
+Requires Python 3.10+ and a free [NASA Earthdata](https://urs.earthdata.nasa.gov) account
+(anyone can register; no NASA affiliation needed). Full step-by-step, including
+Windows and how to check that real data looks right: **[docs/RUNNING.md](docs/RUNNING.md)**.
 
 ```bash
+git clone https://github.com/<owner>/gedi-forest-structure.git
+cd gedi-forest-structure
+python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 pytest                                   # confirm everything works on your machine
 
@@ -50,6 +55,7 @@ python -m gedi_forest bbox --iso NGA --region "Cross River"     # box from the r
 python -m gedi_forest download --bbox <W S E N> --max-granules 8 --dry-run   # preview count and size first
 python -m gedi_forest download --bbox <W S E N> --max-granules 8 --out data/raw/nga
 python -m gedi_forest process  --raw data/raw
+python -m gedi_forest check                                     # sanity-check the real data
 python -m gedi_forest report
 python -m gedi_forest compare  --iso NGA BRA                    # add COD, IDN ... after regions-fetch
 python -m gedi_forest regions-fetch --iso COD IDN               # more countries, on demand
@@ -98,7 +104,7 @@ gedi_forest/
   cli.py          command line
 data/boundaries/  bundled Nigeria and Brazil boundaries + licence metadata
 docs/             METHODS.md, DATA_SOURCES.md
-tests/            47 tests
+tests/            48 tests
 ```
 
 ## Limitations
