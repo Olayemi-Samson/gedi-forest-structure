@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gedi-forest-structure"
+version = "0.1.0"
+description = "Tropical forest canopy structure and change from NASA GEDI spaceborne lidar (L2A)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Olayemi Elijah Samson" }]
+dependencies = [
+  "numpy",
+  "pandas",
+  "h5py",
+  "matplotlib",
+  "earthaccess",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+gedi-forest = "gedi_forest.cli:main"
+
+[tool.setuptools]
+packages = ["gedi_forest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
