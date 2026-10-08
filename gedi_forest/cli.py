@@ -26,6 +26,17 @@ def _granule_size_mb(granule) -> float:
         return 0.0
 
 
+def spread_evenly(items: list, n: int) -> list:
+    """Pick n items spread evenly across the list (results arrive in time order, so
+    taking the first n would bias the sample toward the earliest dates)."""
+    if n <= 0 or len(items) <= n:
+        return list(items)
+    if n == 1:
+        return [items[len(items) // 2]]
+    idx = sorted({round(i * (len(items) - 1) / (n - 1)) for i in range(n)})
+    return [items[i] for i in idx]
+
+
 def cmd_download(a: argparse.Namespace) -> None:
     import earthaccess  # imported lazily; needs a free NASA Earthdata login
 
@@ -38,10 +49,13 @@ def cmd_download(a: argparse.Namespace) -> None:
     )
     print(f"Found {len(results)} granules for the bounding box and dates.")
     if a.max_granules:
-        results = results[: a.max_granules]
+        results = spread_evenly(results, a.max_granules)
     if not results:
         return
     size_mb = sum(_granule_size_mb(r) for r in results)
+    if a.dry_run:
+        print(f"Dry run: would download {len(results)} granules (about {size_mb:,.0f} MB) to {a.out}")
+        return
     print(f"Downloading {len(results)} granules (about {size_mb:,.0f} MB) to {a.out}")
     Path(a.out).mkdir(parents=True, exist_ok=True)
     earthaccess.download(results, a.out)
@@ -210,6 +224,8 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--end", default="2023-03-01")
     d.add_argument("--max-granules", type=int, default=0, help="0 = all found")
     d.add_argument("--out", default="data/raw")
+    d.add_argument("--dry-run", action="store_true",
+                   help="Search and report how many granules and MB, without downloading")
     d.add_argument("--env-login", action="store_true",
                    help="Use EARTHDATA_USERNAME / EARTHDATA_PASSWORD from the environment")
     d.set_defaults(func=cmd_download)

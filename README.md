@@ -24,7 +24,7 @@ state boundaries are bundled; any other country is one command away.
 | Item | State |
 |---|---|
 | Code and command-line tool | Complete |
-| Automated tests | 45 passing (unit, integration and an end-to-end chain) |
+| Automated tests | 47 passing (unit, integration and an end-to-end chain) |
 | Boundary data | **Real**: geoBoundaries Nigeria and Brazil, bundled with licences |
 | Test shots and rasters | Fabricated, for tests only (see `tests/conftest.py`) |
 | Run on real GEDI / Hansen data | Pending; results will be added to `results/` with the exact command and date |
@@ -47,6 +47,7 @@ Or step by step:
 
 ```bash
 python -m gedi_forest bbox --iso NGA --region "Cross River"     # box from the real polygon
+python -m gedi_forest download --bbox <W S E N> --max-granules 8 --dry-run   # preview count and size first
 python -m gedi_forest download --bbox <W S E N> --max-granules 8 --out data/raw/nga
 python -m gedi_forest process  --raw data/raw
 python -m gedi_forest report
@@ -54,7 +55,9 @@ python -m gedi_forest compare  --iso NGA BRA                    # add COD, IDN .
 python -m gedi_forest regions-fetch --iso COD IDN               # more countries, on demand
 ```
 
-GEDI granules are large (often hundreds of MB). Start with a small `--max-granules`.
+GEDI granules are large (the download step prints the total size; use `--dry-run` to
+check first). With `--max-granules N`, granules are spread evenly across the date
+range, so a small sample still covers all years. Start with a small N.
 
 ## Edge effects and regrowth
 
@@ -95,7 +98,7 @@ gedi_forest/
   cli.py          command line
 data/boundaries/  bundled Nigeria and Brazil boundaries + licence metadata
 docs/             METHODS.md, DATA_SOURCES.md
-tests/            45 tests
+tests/            47 tests
 ```
 
 ## Limitations
