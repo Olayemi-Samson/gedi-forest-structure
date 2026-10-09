@@ -1,5 +1,7 @@
 # gedi-forest-structure
 
+[![tests](https://github.com/Olayemi-Samson/gedi-forest-structure/actions/workflows/tests.yml/badge.svg)](https://github.com/Olayemi-Samson/gedi-forest-structure/actions/workflows/tests.yml)
+
 Tropical forest **structure, disturbance and regrowth** from NASA **GEDI**
 spaceborne lidar, with built-in **cross-country comparison** (Nigeria vs. other
 tropical regions).
@@ -65,7 +67,7 @@ Requires Python 3.10+ and a free [NASA Earthdata](https://urs.earthdata.nasa.gov
 Windows and how to check that real data looks right: **[docs/RUNNING.md](docs/RUNNING.md)**.
 
 ```bash
-git clone https://github.com/<owner>/gedi-forest-structure.git
+git clone https://github.com/Olayemi-Samson/gedi-forest-structure.git
 cd gedi-forest-structure
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"

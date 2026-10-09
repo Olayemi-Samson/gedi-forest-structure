@@ -6,7 +6,7 @@ needs a NASA job: GEDI data is public and only requires a free login.
 ## 1. Install and self-test
 
 ```bash
-git clone https://github.com/<owner>/gedi-forest-structure.git
+git clone https://github.com/Olayemi-Samson/gedi-forest-structure.git
 cd gedi-forest-structure
 python -m venv .venv
 source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
