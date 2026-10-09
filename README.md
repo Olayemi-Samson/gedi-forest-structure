@@ -19,6 +19,33 @@ GEDI Level 2A footprints into answers to five concrete questions:
 It works anywhere GEDI flies (roughly 51.6 degrees N to S). Nigeria and Brazil
 state boundaries are bundled; any other country is one command away.
 
+## What is this, in plain English?
+
+**GEDI** (Global Ecosystem Dynamics Investigation) is a NASA laser instrument
+(lidar) mounted on the International Space Station since 2019. It fires laser
+pulses at the ground and times how long the light takes to return from the
+treetops and from the forest floor. The difference gives the **height and layered
+structure of the forest**, which tells scientists how much carbon the forest holds.
+
+Taller, denser forest generally stores more carbon. When forest is cleared, burned
+or logged, that carbon is lost; when it regrows, carbon is slowly regained. Seeing
+this from space, in many countries at once, is hard. This toolkit does the
+practical part: it reads the raw GEDI files, removes unreliable measurements,
+and answers questions such as how tall forest is, how it differs between countries,
+how clearings affect nearby forest, and how fast cleared land recovers.
+
+Plain-language glossary:
+
+| Term | Meaning |
+|---|---|
+| Lidar | Measuring distance with laser light |
+| Canopy height (RH98) | Height below which 98% of the returned laser energy sits; a practical measure of tree-top height |
+| Granule | One GEDI data file covering one stretch of orbit |
+| Shot / footprint | One laser pulse landing on a circle about 25 m wide |
+| Edge effect | Forest next to a clearing behaves differently from forest deep inside |
+| Regrowth | Recovery of height after clearing |
+| Cross-validation | Testing a model on data it has not seen, to avoid fooling ourselves |
+
 ## Status (read this first)
 
 | Item | State |
